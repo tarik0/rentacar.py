@@ -1,8 +1,12 @@
 import sqlite3
+from os.path import exists
 
 
 class CarDatabase:
-    def __init__(self, db_path):
+    def __init__(self, db_path, overwrite=False):
+        if not exists(db_path) and overwrite:
+            open(db_path, "w").close()
+
         self.conn = sqlite3.connect(db_path)
         self.create_tables()
 
@@ -10,6 +14,7 @@ class CarDatabase:
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS Users (
                 nationalId TEXT PRIMARY KEY CHECK (LENGTH(nationalId) = 11),
+                passHash TEXT NOT NULL CHECK (LENGTH(passHash) = 32),
                 fullname TEXT NOT NULL
             );
         """)
@@ -26,8 +31,13 @@ class CarDatabase:
             );
         """)
 
-    def insert_user(self, national_id, fullname):
-        self.conn.execute("INSERT INTO Users (nationalId, fullname) VALUES (?, ?)", (national_id, fullname))
+    def check_user(self, national_id, pass_hash):
+        cursor = self.conn.execute("SELECT * FROM Users WHERE nationalId = ? AND passHash = ?",
+                                   (national_id, pass_hash))
+        return cursor.fetchone()
+
+    def insert_user(self, national_id, pass_hash, fullname):
+        self.conn.execute("INSERT INTO Users (nationalId, passHash, fullname) VALUES (?, ?, ?)", (national_id, pass_hash, fullname))
         self.conn.commit()
 
     def insert_car(self, plate, occupied_until, occupied_to, daily_price, production_date, production_name, image_url):

@@ -7,6 +7,7 @@
 ```sqlite
 CREATE TABLE IF NOT EXISTS Users (
     nationalId TEXT PRIMARY KEY CHECK (LENGTH(nationalId) = 11),
+    passHash TEXT NOT NULL CHECK (LENGTH(passHash) = 32),
     fullname TEXT NOT NULL
 );
 ```
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS Cars (
 ### Insert New User
 
 ```sqlite
-INSERT INTO Users (nationalId, fullname) VALUES ('12345678901', 'John Doe');
+INSERT INTO Users (nationalId, passHash, fullname) VALUES ('12345678901', '...', 'John Doe');
 ```
 
 ### Insert New Car
