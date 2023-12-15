@@ -20,7 +20,7 @@ class MainApp(customtkinter.CTk):
         self.add_car_button.grid(row=1, column=0, padx=10, pady=10, sticky="w")
 
         # Remove Car Button
-        self.remove_car_button = customtkinter.CTkButton(self, text="Remove Car")
+        self.remove_car_button = customtkinter.CTkButton(self, text="Remove Car",command=self.remove_car)
         self.remove_car_button.grid(row=2, column=0, padx=10, pady=10, sticky="w")
 
         # Check Users Button
@@ -28,6 +28,8 @@ class MainApp(customtkinter.CTk):
         self.check_users_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 
     def add_car(self):
+        #TO STOP OTHER OPTIONS
+        self.remove_car_button.configure(state=customtkinter.DISABLED)
        
         self.plate_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Plate")
         self.plate_ent.grid(row=5, column=3)
@@ -49,10 +51,61 @@ class MainApp(customtkinter.CTk):
         
         self.add_image_button_ent = customtkinter.CTkButton(self, text="Add Image",command=self.process_image)
         self.add_image_button_ent.grid(row=6, column=6, padx=10, pady=10)
+        
+        try:
+            self.submit_button_ent = customtkinter.CTkButton(self, text="Submit",command=self.add_car_callback)
+            self.submit_button_ent.grid(row=7,column=6, padx=10, pady=10)
+        
+        except Exception as e:
+            print(e)
+            messagebox.showerror("Auth", "Internal database error!")
+            print("Internal database error!", e)
+        
+        self.finish_ent = customtkinter.CTkButton(self, text="Finish",command=self.close_add_car)
+        self.finish_ent.grid(row=10, column=8)
+    
+    def add_car_callback(self):
+            
+            try:
+                plate = self.plate_ent.get()
+                occupied_until = self.occupiedUntil_ent.get()
+                occupied_to = self.occupiedTo_ent.get()
+                daily_price = self.dailyPrice_ent.get()
+                production_date = self.productionDate_ent.get()
+                production_name = self.productionName_ent.get()
+                car_image = self.image_base64
 
-        self.submit_button_ent = customtkinter.CTkButton(self, text="Submit",command=self.add_car_callback)
-        self.submit_button_ent.grid(row=7,column=6, padx=10, pady=10)
+                self.db.insert_car(plate=plate, occupied_until=occupied_until, 
+                                   occupied_to=occupied_to, daily_price=daily_price,
+                                     production_date=production_date, production_name=production_name, image_url=car_image
+                                   )
+                
 
+
+            except Exception as e:
+                print(e)
+                messagebox.showerror("Auth", "Internal database error!")
+                print("Internal database error!", e)
+    
+    def close_add_car(self):
+        
+        self.plate_ent.grid_forget()
+        self.occupiedUntil_ent.grid_forget()
+        self.occupiedTo_ent.grid_forget()
+        self.dailyPrice_ent.grid_forget()
+        self.productionDate_ent.grid_forget()
+        self.productionName_ent.grid_forget()
+        self.add_image_button_ent.grid_forget()
+        self.submit_button_ent.grid_forget()
+        self.finish_ent.grid_forget()
+        try:
+            self.image_label.grid_forget()
+        
+        except Exception as e:
+            print(e)
+        
+        #TO ACTİVETE TO ACCES TO OTHER OTPTİONS
+        self.remove_car_button.configure(state=customtkinter.NORMAL)
 
     def process_image(self):
         
@@ -62,36 +115,60 @@ class MainApp(customtkinter.CTk):
         with open(file_path, "rb") as file:
             image_binary = file.read()
 
-        # Convert the image to Base64 format
+        # Convert the image to Base64 format 
         image_base64 = base64.b64encode(image_binary).decode("utf-8")
-
-        # Decode Base64 image text
-        decoded_image_binary = base64.b64decode(image_base64)
+        self.image_base64 = image_base64
+    
+        # Decode Base64 image text decoded_image_binary = base64.b64decode(image_base64)
 
         # Open the image using Pillow
-        image_pil = Image.open(BytesIO(decoded_image_binary))
+        image_pil = Image.open(BytesIO(image_binary))
 
             
-        image_button = customtkinter.CTkImage(light_image=image_pil,size=(400,200))
-        image_label = customtkinter.CTkLabel(self, image=image_button,text=None)
-        image_label.grid(row=9,column=6)
-
-        
-
-    def add_car_callback(self):
-        
-        plate= self.plate_ent.get()
-        occupiedUntil = self.occupiedUntil_ent.get()
-        occupiedTo= self.occupiedTo_ent.get()
-        dailyPrice= self.dailyPrice_ent.get()
-        productionDate= self.productionDate_ent.get()
-        productionName= self.productionName_ent.get()
-        carImage = self.image_base64.get()
-
-        print (plate,occupiedUntil,occupiedTo,dailyPrice,productionDate,productionName,carImage)
+        image_button = customtkinter.CTkImage(light_image=image_pil,size=(500,350))
+        self.image_label = customtkinter.CTkLabel(self, image=image_button,text=None)
+        self.image_label.grid(row=10, column=2, rowspan = 10, columnspan=9)
 
 
     
+    
+    def remove_car(self):
+
+        self.add_car_button.configure(state=customtkinter.DISABLED)
+
+        self.plate_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Plate")
+        self.plate_ent.grid(row=5, column=3)
+
+        self.finish_ent = customtkinter.CTkButton(self, text="Finish",command=self.close_remove_car)
+        self.finish_ent.grid(row=7, column=7)
+
+        try:
+            self.submit_button_ent = customtkinter.CTkButton(self, text="Remove Car",command=self.remove_car_callback)
+            self.submit_button_ent.grid(row=7,column=6, padx=10, pady=10)
+        
+        except Exception as e:
+            print(e)
+            messagebox.showerror("Auth", "Internal database error!")
+            print("Internal database error!", e)
+
+    def remove_car_callback(self):
+        
+        plate = self.plate_ent.get()
+        
+        if self.db.check_car(plate = plate) == None:
+            messagebox.showerror("DB ERROR","There Is No Such Car!")
+        else:
+            self.db.remove_car(plate = plate)
+            messagebox.showerror("","Car Removed From Database!")
+    
+    def close_remove_car(self):
+        
+        self.add_car_button.configure(state=customtkinter.NORMAL)
+
+        self.plate_ent.grid_forget()
+        self.submit_button_ent.grid_forget()
+        self.finish_ent.grid_forget()
+
     
 
 class LoginApp(customtkinter.CTk):

@@ -54,6 +54,10 @@ class CarDatabase:
     def remove_car(self, plate):
         self.conn.execute("DELETE FROM Cars WHERE plate = ?", (plate,))
         self.conn.commit()
+    
+    def check_car(self, plate):
+        cursor = self.conn.execute("SELECT * FROM Cars WHERE plate = ?" , (plate,))
+        return cursor.fetchone()
 
     def fetch_best_car_for_rent(self):
         cursor = self.conn.execute(
