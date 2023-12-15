@@ -66,8 +66,7 @@ class CarDatabase:
         return cursor.fetchall()
 
     def assign_car_to_user(self, plate, end_date, national_id):
-        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",
-                          (end_date, national_id, plate))
+        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",(end_date, national_id, plate))
         self.conn.commit()
 
     def close(self):

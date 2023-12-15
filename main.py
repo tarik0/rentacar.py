@@ -1,15 +1,16 @@
 import customtkinter
-
 from db import CarDatabase
-from gui import LoginApp
+from gui import LoginApp, MainApp
+
+
 
 if __name__ == '__main__':
     # set appearance mode to dark
-    customtkinter.set_appearance_mode("dark")
+    customtkinter.set_default_color_theme("green")
 
     # create the database
     db = CarDatabase("rentacar.db", overwrite=True)
 
-    # create the app
-    app = LoginApp(db=db, on_success=lambda x: app.destroy())
+     #Start the MainApp class
+    app = MainApp(db=db)
     app.mainloop()

@@ -1,10 +1,98 @@
 from hashlib import md5
-from tkinter import messagebox
-
+from tkinter import messagebox,filedialog
+from functools import partial
 import customtkinter
-
+from PIL import Image, ImageTk
+import base64
+from io import BytesIO
 from db import CarDatabase
 
+
+class MainApp(customtkinter.CTk):
+    def __init__(self, db: CarDatabase):
+        super().__init__()
+        self.db = db
+        self.geometry("1250x720")
+        self.title("RENTACAR - SYSTEM")
+
+        # Add Car Button
+        self.add_car_button = customtkinter.CTkButton(self, text="Add Car", command=self.add_car)
+        self.add_car_button.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+
+        # Remove Car Button
+        self.remove_car_button = customtkinter.CTkButton(self, text="Remove Car")
+        self.remove_car_button.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+
+        # Check Users Button
+        self.check_users_button = customtkinter.CTkButton(self, text="Check Users")
+        self.check_users_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
+
+    def add_car(self):
+       
+        self.plate_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Plate")
+        self.plate_ent.grid(row=5, column=3)
+
+        self.occupiedUntil_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Occupied Until")
+        self.occupiedUntil_ent.grid(row=5, column=4)
+
+        self.occupiedTo_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Occupied To")
+        self.occupiedTo_ent.grid(row=5, column=5)
+
+        self.dailyPrice_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Daily Price (TL)")
+        self.dailyPrice_ent.grid(row=5, column=6) 
+
+        self.productionDate_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Year")
+        self.productionDate_ent.grid(row=5, column=7)    
+
+        self.productionName_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Brand")
+        self.productionName_ent.grid(row=5, column=8)        
+        
+        self.add_image_button_ent = customtkinter.CTkButton(self, text="Add Image",command=self.process_image)
+        self.add_image_button_ent.grid(row=6, column=6, padx=10, pady=10)
+
+        self.submit_button_ent = customtkinter.CTkButton(self, text="Submit",command=self.add_car_callback)
+        self.submit_button_ent.grid(row=7,column=6, padx=10, pady=10)
+
+
+    def process_image(self):
+        
+        file_path = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("Image Files", "*.png;*.jpg;*.jpeg;*.gif"), ("All Files", "*.*")))
+
+        # Convert the image to binary format
+        with open(file_path, "rb") as file:
+            image_binary = file.read()
+
+        # Convert the image to Base64 format
+        image_base64 = base64.b64encode(image_binary).decode("utf-8")
+
+        # Decode Base64 image text
+        decoded_image_binary = base64.b64decode(image_base64)
+
+        # Open the image using Pillow
+        image_pil = Image.open(BytesIO(decoded_image_binary))
+
+            
+        image_button = customtkinter.CTkImage(light_image=image_pil,size=(400,200))
+        image_label = customtkinter.CTkLabel(self, image=image_button,text=None)
+        image_label.grid(row=9,column=6)
+
+        
+
+    def add_car_callback(self):
+        
+        plate= self.plate_ent.get()
+        occupiedUntil = self.occupiedUntil_ent.get()
+        occupiedTo= self.occupiedTo_ent.get()
+        dailyPrice= self.dailyPrice_ent.get()
+        productionDate= self.productionDate_ent.get()
+        productionName= self.productionName_ent.get()
+        carImage = self.image_base64.get()
+
+        print (plate,occupiedUntil,occupiedTo,dailyPrice,productionDate,productionName,carImage)
+
+
+    
+    
 
 class LoginApp(customtkinter.CTk):
     def __init__(self, db: CarDatabase, on_success=None):
@@ -141,3 +229,4 @@ class LoginApp(customtkinter.CTk):
                 "nationalId": _id,
                 "fullname": fullname
             })
+
