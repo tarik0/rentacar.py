@@ -54,6 +54,10 @@ class CarDatabase:
     def remove_car(self, plate):
         self.conn.execute("DELETE FROM Cars WHERE plate = ?", (plate,))
         self.conn.commit()
+    
+    def check_car(self, plate):
+        cursor = self.conn.execute("SELECT * FROM Cars WHERE plate = ?" , (plate,))
+        return cursor.fetchone()
 
     def fetch_best_car_for_rent(self):
         cursor = self.conn.execute(
@@ -66,8 +70,7 @@ class CarDatabase:
         return cursor.fetchall()
 
     def assign_car_to_user(self, plate, end_date, national_id):
-        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",
-                          (end_date, national_id, plate))
+        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",(end_date, national_id, plate))
         self.conn.commit()
 
     def close(self):
