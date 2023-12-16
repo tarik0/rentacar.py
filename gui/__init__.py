@@ -1,8 +1,7 @@
 from hashlib import md5
 from tkinter import messagebox,filedialog
-from functools import partial
 import customtkinter
-from PIL import Image, ImageTk
+from PIL import Image
 import base64
 from io import BytesIO
 from db import CarDatabase
@@ -23,12 +22,15 @@ class MainApp(customtkinter.CTk):
         self.remove_car_button = customtkinter.CTkButton(self, text="Remove Car",command=self.remove_car)
         self.remove_car_button.grid(row=2, column=0, padx=10, pady=10, sticky="w")
 
-        # Check Users Button
-        self.check_users_button = customtkinter.CTkButton(self, text="Check Users")
-        self.check_users_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
+        # Check Avaliable Carss Button
+        self.check_cars_button = customtkinter.CTkButton(self, text="All Avalible Cars",command= self.show_all_available_cars)
+        self.check_cars_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
+
+        
 
     def add_car(self):
-        #TO STOP OTHER OPTIONS
+        
+        #To stop the other buttons
         self.remove_car_button.configure(state=customtkinter.DISABLED)
        
         self.plate_ent = customtkinter.CTkEntry(self, width=180, placeholder_text="Plate")
@@ -64,6 +66,7 @@ class MainApp(customtkinter.CTk):
         self.finish_ent = customtkinter.CTkButton(self, text="Finish",command=self.close_add_car)
         self.finish_ent.grid(row=10, column=8)
     
+    #To get info from the user
     def add_car_callback(self):
             
             try:
@@ -79,14 +82,13 @@ class MainApp(customtkinter.CTk):
                                    occupied_to=occupied_to, daily_price=daily_price,
                                      production_date=production_date, production_name=production_name, image_url=car_image
                                    )
-                
-
 
             except Exception as e:
                 print(e)
                 messagebox.showerror("Auth", "Internal database error!")
                 print("Internal database error!", e)
     
+    #Turn back to clean main
     def close_add_car(self):
         
         self.plate_ent.grid_forget()
@@ -107,6 +109,7 @@ class MainApp(customtkinter.CTk):
         #TO ACTİVETE TO ACCES TO OTHER OTPTİONS
         self.remove_car_button.configure(state=customtkinter.NORMAL)
 
+    #To store the image as text 
     def process_image(self):
         
         file_path = filedialog.askopenfilename(initialdir="/", title="Select File", filetypes=(("Image Files", "*.png;*.jpg;*.jpeg;*.gif"), ("All Files", "*.*")))
@@ -125,13 +128,11 @@ class MainApp(customtkinter.CTk):
         image_pil = Image.open(BytesIO(image_binary))
 
             
-        image_button = customtkinter.CTkImage(light_image=image_pil,size=(500,350))
+        image_button = customtkinter.CTkImage(light_image=image_pil,size=(280, 150))
         self.image_label = customtkinter.CTkLabel(self, image=image_button,text=None)
-        self.image_label.grid(row=10, column=2, rowspan = 10, columnspan=9)
+        self.image_label.grid(row=7, column=1,columnspan = 5,sticky = 'w')
 
 
-    
-    
     def remove_car(self):
 
         self.add_car_button.configure(state=customtkinter.DISABLED)
@@ -168,6 +169,57 @@ class MainApp(customtkinter.CTk):
         self.plate_ent.grid_forget()
         self.submit_button_ent.grid_forget()
         self.finish_ent.grid_forget()
+
+    def show_all_available_cars(self):
+        # Get all available cars from the database
+        available_cars_tuples = self.db.fetch_all_available_cars()
+
+        # Convert each tuple to a dictionary
+        available_cars = [dict(zip(["plate", "occupied_until", "occupied_to", "daily_price", "production_date", "production_name", "image_url"], car)) for car in available_cars_tuples]
+
+        # Create a new window to display the available cars
+        available_cars_window = customtkinter.CTkToplevel(self)
+        available_cars_window.title("Available Cars")
+
+        # Create labels to display car information
+        header_labels = ["Plate", "Occupied Until", "Occupied To", "Daily Price", "Year", "Brand", "Image"]
+        for col, header in enumerate(header_labels):
+            label = customtkinter.CTkLabel(available_cars_window, text=header, font=("Rubik", 18, "bold"))
+            label.grid(row=0, column=col, padx=10, pady=10)
+
+        # Display each available car's information
+        for row, car in enumerate(available_cars, start=1):
+            plate_label = customtkinter.CTkLabel(available_cars_window, text=car['plate'], font=("Defoult", 13))
+            plate_label.grid(row=row, column=0, padx=15, pady=15)
+
+            occupied_until_label = customtkinter.CTkLabel(available_cars_window, text=car['occupied_until'], font=("Defoult", 13))
+            occupied_until_label.grid(row=row, column=1, padx=15, pady=15)
+
+            occupied_to_label = customtkinter.CTkLabel(available_cars_window, text=car['occupied_to'], font=("Defoult", 13))
+            occupied_to_label.grid(row=row, column=2, padx=15, pady=15)
+
+            daily_price_label = customtkinter.CTkLabel(available_cars_window, text=(car['daily_price']," TL"), font=("Defoult", 13))
+            daily_price_label.grid(row=row, column=3, padx=15, pady=15)
+
+            production_date_label = customtkinter.CTkLabel(available_cars_window, text=car['production_date'], font=("Defoult", 13))
+            production_date_label.grid(row=row, column=4, padx=15, pady=15)
+
+            production_name_label = customtkinter.CTkLabel(available_cars_window, text=car['production_name'], font=("Defoult", 13))
+            production_name_label.grid(row=row, column=5, padx=15, pady=15)
+
+            # Assuming you have stored images as base64 strings in the database
+            image_data = base64.b64decode(car['image_url'])
+            image_pil = Image.open(BytesIO(image_data))
+            image_button = customtkinter.CTkImage(light_image=image_pil, size=(280, 150))
+            image_label = customtkinter.CTkLabel(available_cars_window, image=image_button, text=None)
+            image_label.grid(row=row, column=6, padx=10, pady=10)
+
+        # Add a close button
+        close_button = customtkinter.CTkButton(available_cars_window, text="Close", command=available_cars_window.destroy)
+        close_button.grid(row=row + 1, column=0, columnspan=7, pady=10)
+        available_cars_window.grab_set()
+        available_cars_window.focus_set()
+        available_cars_window.wait_window()
 
     
 
