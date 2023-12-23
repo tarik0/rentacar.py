@@ -7,19 +7,27 @@ from gui.test import MainApp
 
 if __name__ == '__main__':
     # set appearance mode to dark
-    customtkinter.set_appearance_mode("dark")  # Modes: system (default), light, dark
-    customtkinter.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
+    customtkinter.set_appearance_mode("dark")
+    customtkinter.set_default_color_theme("./assets/theme.json")
 
     # create the database
     db = CarDatabase("rentacar.db", overwrite=True)
 
     # load logo
-    logo = Image.open("./gui/assets/logo.png")
+    logo = Image.open("assets/logo.png")
+
+    def on_login_success():
+        print("Login success")
+
+        # start main
+        _app = MainApp(db=db, logo=logo)
+        _app.mainloop()
 
     # start login
-    app = LoginApp(db=db, logo=logo)
+    app = LoginApp(db=db, logo=logo, on_success=on_login_success)
     app.mainloop()
 
-    # start main
-    app = MainApp(db=db, logo=logo)
-    app.mainloop()
+    # todo: remove this
+    on_login_success()
+
+
