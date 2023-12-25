@@ -24,8 +24,8 @@ if __name__ == '__main__':
         _app.mainloop()
 
     # start login
-    app = LoginApp(db=db, logo=logo, on_success=on_login_success)
-    app.mainloop()
+    #app = LoginApp(db=db, logo=logo, on_success=on_login_success)
+    #app.mainloop()
 
     # todo: remove this
     on_login_success()

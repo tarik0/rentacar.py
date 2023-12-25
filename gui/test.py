@@ -2,7 +2,8 @@ import base64
 from io import BytesIO
 
 import customtkinter
-from PIL import Image
+from PIL import Image, ImageDraw, ImageOps, ImageTk
+
 from db import CarDatabase
 
 
@@ -70,9 +71,88 @@ class MainApp(customtkinter.CTk):
             button.grid(row=i+3, column=0, pady=5, padx=0, sticky="e")
         pass
 
-    def show_view(self):
-        self.view_frame.rowconfigure(0, minsize=75)
+    def round_image(self, image_pil, border_radius=20, border_width=5, border_color=(0, 0, 0)):
+        # Create a mask for the rounded corners
+        mask = Image.new("L", image_pil.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.rounded_rectangle([(0, 0), image_pil.size], radius=border_radius, fill=255)
 
+        # Apply the mask to the image
+        image_pil.putalpha(mask)
+
+        # Create a new image with a transparent background
+        bordered_image = Image.new("RGBA", image_pil.size, (0, 0, 0, 0))
+
+        # Paste the masked image onto the transparent background
+        bordered_image.paste(image_pil, (0, 0), image_pil)
+
+        # Add a border with a corner radius
+        border_image = Image.new("RGBA", bordered_image.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(border_image)
+        draw.rounded_rectangle([(0, 0), bordered_image.size], radius=border_radius, outline=border_color,
+                               width=border_width)
+
+        # Composite the bordered image with the border
+        final_image = Image.alpha_composite(border_image, bordered_image)
+
+        return final_image
+
+    def create_table_frame(self, master, available_cars, height=400):
+        # frame to show the list of available cars
+        frame = customtkinter.CTkScrollableFrame(master, fg_color="#1a1a1a", height=height, corner_radius=5)
+
+        # set the column weights
+        for i in range(6):
+            frame.columnconfigure(i, weight=1)
+        frame.columnconfigure(6, weight=0)
+
+        # create the header labels
+        header_labels = ["Plate", "Available Date", "Driver", "Price", "Year", "Brand", "Picture"]
+        for col, header in enumerate(header_labels):
+            label = customtkinter.CTkLabel(frame, text=header, text_color="#ff3838", font=("Default", 15, "bold"))
+            label.grid(row=0, pady=15, column=col)
+
+        # display cars
+        for row, car in enumerate(available_cars, start=1):
+            # show plate
+            plate_label = customtkinter.CTkLabel(frame, text=car['plate'].upper(), font=("Default", 13, "bold"))
+            plate_label.grid(row=row, column=0)
+
+            # show available date
+            occupied_until_label = customtkinter.CTkLabel(frame, text=car['occupied_until'], font=("Default", 13))
+            occupied_until_label.grid(row=row, column=1)
+
+            # show driver
+            occupied_to_label = customtkinter.CTkLabel(frame, text=car['occupied_to'], font=("Default", 13))
+            occupied_to_label.grid(row=row, column=2)
+
+            # show price
+            daily_price_label = customtkinter.CTkLabel(frame, text=f"{car['daily_price']} TL", font=("Default", 13))
+            daily_price_label.grid(row=row, column=3)
+
+            # show year
+            production_date_label = customtkinter.CTkLabel(frame, text=car['production_date'], font=("Default", 13))
+            production_date_label.grid(row=row, column=4)
+
+            # show brand
+            production_name_label = customtkinter.CTkLabel(frame, text=car['production_name'], font=("Default", 13))
+            production_name_label.grid(row=row, column=5)
+
+            # show image
+            image_data = base64.b64decode(car['image_url'])
+            image_pil = Image.open(BytesIO(image_data))
+
+            # add rounding to the image
+            output = self.round_image(image_pil, border_radius=10, border_width=15, border_color=(255, 255, 255))
+            image_button = customtkinter.CTkImage(light_image=output, size=(100, 75))
+            image_label = customtkinter.CTkLabel(frame, image=image_button, corner_radius=50, text=None)
+            image_label.grid(row=row, column=6, pady=5, sticky="ens")
+
+        return frame
+
+
+
+    def show_view(self):
         # Get all available cars from the database
         available_cars_tuples = self.db.fetch_all_available_cars()
 
@@ -81,40 +161,7 @@ class MainApp(customtkinter.CTk):
             zip(["plate", "occupied_until", "occupied_to", "daily_price", "production_date", "production_name",
                  "image_url"], car)) for car in available_cars_tuples]
 
-        # Create labels to display car information
-        header_labels = ["Plate", "Occupied Until", "Occupied To", "Daily Price", "Year", "Brand", "Image"]
-        for col, header in enumerate(header_labels):
-            label = customtkinter.CTkLabel(self.view_frame, text=header, bg_color="#7c0000", font=("Rubik", 18, "bold"))
-            label.grid(row=0, column=col, padx=10, pady=10, sticky="news")
+        # Create the table frame
+        frame = self.create_table_frame(self.view_frame, available_cars)
 
-        # Display each available car's information
-        for row, car in enumerate(available_cars, start=1):
-            plate_label = customtkinter.CTkLabel(self.view_frame, text=car['plate'], font=("Default", 13))
-            plate_label.grid(row=row, column=0, padx=15, pady=15)
-
-            occupied_until_label = customtkinter.CTkLabel(self.view_frame, text=car['occupied_until'],
-                                                          font=("Default", 13))
-            occupied_until_label.grid(row=row, column=1, padx=15, pady=15)
-
-            occupied_to_label = customtkinter.CTkLabel(self.view_frame, text=car['occupied_to'],
-                                                       font=("Default", 13))
-            occupied_to_label.grid(row=row, column=2, padx=15, pady=15)
-
-            daily_price_label = customtkinter.CTkLabel(self.view_frame, text=f"{car['daily_price']} TL",
-                                                       font=("Default", 13))
-            daily_price_label.grid(row=row, column=3, padx=15, pady=15)
-
-            production_date_label = customtkinter.CTkLabel(self.view_frame, text=car['production_date'],
-                                                           font=("Default", 13))
-            production_date_label.grid(row=row, column=4, padx=15, pady=15)
-
-            production_name_label = customtkinter.CTkLabel(self.view_frame, text=car['production_name'],
-                                                           font=("Default", 13))
-            production_name_label.grid(row=row, column=5, padx=15, pady=15)
-
-            # Assuming you have stored images as base64 strings in the database
-            image_data = base64.b64decode(car['image_url'])
-            image_pil = Image.open(BytesIO(image_data))
-            image_button = customtkinter.CTkImage(light_image=image_pil, size=(280, 150))
-            image_label = customtkinter.CTkLabel(self.view_frame, image=image_button, text=None)
-            image_label.grid(row=row, column=6, padx=10, pady=10)
+        frame.grid(row=0, column=0, pady=15, padx=15, sticky="news")
