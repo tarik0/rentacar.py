@@ -178,7 +178,7 @@ class MainApp(customtkinter.CTk):
 
     def show_all_available_cars(self):
         # Get all available cars from the database
-        available_cars_tuples = self.db.fetch_all_available_cars()
+        available_cars_tuples = self.db.fetch_cars()
 
         # Convert each tuple to a dictionary
         available_cars = [dict(

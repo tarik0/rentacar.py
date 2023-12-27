@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Users (
 CREATE TABLE IF NOT EXISTS Cars (
     plate TEXT PRIMARY KEY NOT NULL CHECK (LENGTH(plate) >= 7 AND LENGTH(plate) <= 9),
     occupiedUntil DATE NOT NULL CHECK (occupiedUntil >= '0000-00-00'),
-    occupiedTo TEXT NOT NULL,
+    occupiedTo TEXT,
     dailyPrice REAL NOT NULL,
     productionDate DATE NOT NULL,
     productionName TEXT NOT NULL,
@@ -39,7 +39,7 @@ INSERT INTO Users (nationalId, passHash, fullname) VALUES ('12345678901', '...',
 
 ```sqlite
 INSERT INTO Cars (plate, occupiedUntil, occupiedTo, dailyPrice, productionDate, productionName, imageUrl) 
-VALUES ('ABC1234', '2023-01-01', '12345678901', 100.0, '2020-01-01', 'Model X', 'http://example.com/carimage.jpg');
+VALUES ('ABC1234', '2023-01-01', '12345678901', 100.0, '2020-01-01', 'Model X', 'base64url');
 ```
 
 ## Remove Row
