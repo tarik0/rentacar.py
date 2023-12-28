@@ -1,8 +1,9 @@
 import base64
 import time
+import tkinter
 from datetime import datetime
 from io import BytesIO
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from tkinter.constants import BOTH
 
 import customtkinter
@@ -34,7 +35,7 @@ class MainApp(customtkinter.CTk):
         self.create_menu()
 
         # Create view frame
-        self.view_frame = customtkinter.CTkFrame(self, height=720)
+        self.view_frame = customtkinter.CTkFrame(self, height=720, fg_color=dark_color)
         self.view_frame.grid_columnconfigure(0, weight=1)  # Allow the view_frame to expand horizontally
         self.view_frame.grid_rowconfigure(0, weight=1)  # Allow the view_frame to expand vertically
         self.view_frame.pack(fill="both", expand=True, side="right", padx=10, pady=10)
@@ -311,7 +312,140 @@ class MainApp(customtkinter.CTk):
 
         # create table frame
         table_frame = self.create_cars_frame(self.view_frame, available_cars)
-        table_frame.pack(fill="both", expand=True)
+        table_frame.pack(fill="both", pady=10, expand=True)
+
+        # create the add car button
+        def add_car_callback():
+            # create a new window
+            add_car_window = customtkinter.CTkToplevel(self, width=400, height=500)
+            add_car_window.title("Add Car")
+            add_car_window.resizable(False, False)
+
+            # center the window
+            add_car_window.update_idletasks()
+            add_car_window.geometry(f"+{self.winfo_x() + self.winfo_width() // 2 - add_car_window.winfo_width() // 2}+"
+                                    f"{self.winfo_y() + self.winfo_height() // 2 - add_car_window.winfo_height() // 2}")
+
+            # create the input frame
+            input_frame = customtkinter.CTkFrame(add_car_window, fg_color="#3a3a3a")
+            input_frame.grid_columnconfigure(0, weight=1)
+            input_frame.grid_columnconfigure(1, weight=1)
+            input_frame.grid_rowconfigure(0, weight=1)
+            input_frame.grid_rowconfigure(1, weight=1)
+            input_frame.grid_rowconfigure(2, weight=1)
+            input_frame.grid_rowconfigure(3, weight=1)
+            input_frame.grid_rowconfigure(4, weight=1)
+
+            # create the input labels
+            plate_label = customtkinter.CTkLabel(input_frame, text="Plate", text_color="#ff3838",
+                                                 font=("Default", 15, "bold"))
+            daily_price_label = customtkinter.CTkLabel(input_frame, text="Daily Price", text_color="#ff3838",
+                                                       font=("Default", 15, "bold"))
+            production_date_label = customtkinter.CTkLabel(input_frame, text="Production Date", text_color="#ff3838",
+                                                           font=("Default", 15, "bold"))
+            production_name_label = customtkinter.CTkLabel(input_frame, text="Production Name", text_color="#ff3838",
+                                                           font=("Default", 15, "bold"))
+            image_label = customtkinter.CTkLabel(input_frame, text="Image File", text_color="#ff3838",
+                                                 font=("Default", 15, "bold"))
+            plate_label.grid(row=0, column=0, padx=10, pady=10, sticky="news")
+            daily_price_label.grid(row=1, column=0, padx=10, pady=10, sticky="news")
+            production_date_label.grid(row=2, column=0, padx=10, pady=10, sticky="news")
+            production_name_label.grid(row=3, column=0, padx=10, pady=10, sticky="news")
+            image_label.grid(row=4, column=0, padx=10, pady=10, sticky="news")
+
+            def on_select_image():
+                # open a file dialog
+                file_path = filedialog.askopenfilename(parent=add_car_window, title="Select Image",
+                                                       filetypes=[("Image Files", "*.png *.jpg, *.jpeg")])
+                if file_path == "":
+                    return
+
+                # set the image url
+                image_entry_var.set(file_path)
+
+            # create the input entries
+            plate_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Plate")
+            daily_price_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Daily Price")
+            production_date_entry = customtkinter.CTkEntry(input_frame, width=180,
+                                                           placeholder_text="Production (YYYY-MM-DD)")
+            production_name_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Name")
+            image_entry_var = customtkinter.StringVar()
+            image_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Image URL",
+                                                 textvariable=image_entry_var)
+            select_image_button = customtkinter.CTkButton(input_frame, text="Select Image", command=on_select_image)
+
+            # place the input entries
+            plate_entry.grid(row=0, column=1, padx=10, pady=10, sticky="news")
+            daily_price_entry.grid(row=1, column=1, padx=10, pady=10, sticky="news")
+            production_date_entry.grid(row=2, column=1, padx=10, pady=10, sticky="news")
+            production_name_entry.grid(row=3, column=1, padx=10, pady=10, sticky="news")
+            image_entry.grid(row=4, column=1, padx=10, pady=10, sticky="news")
+            select_image_button.grid(row=5, column=1, padx=10, pady=10, sticky="news")
+
+            # create the add button
+            def add_callback():
+                # focus
+                add_car_window.focus()
+
+                # get the values from the entries
+                plate = plate_entry.get()
+                occupied_until = "0000-00-00"
+                daily_price = daily_price_entry.get()
+                production_date = production_date_entry.get()
+                production_name = production_name_entry.get()
+                image_url = image_entry.get()
+
+                # check if the plate is valid
+                if len(plate) < 7 or len(plate) > 9:
+                    messagebox.showerror(parent=add_car_window, title="Error", message="Invalid plate.")
+                    return
+
+                # check if the daily price is valid
+                try:
+                    float(daily_price)
+                except ValueError:
+                    messagebox.showerror(parent=add_car_window, title="Error", message="Invalid price.")
+                    return
+
+                # check if the production date is valid
+                try:
+                    datetime.strptime(production_date, "%Y-%m-%d")
+                except ValueError:
+                    messagebox.showerror(parent=add_car_window, title="Error", message="Invalid production date.")
+                    return
+
+                # read the image and convert it to base64
+                try:
+                    image = Image.open(image_url)
+                    image = image.resize((100, 75))
+                    image = image.convert("RGB")
+                    buffered = BytesIO()
+                    image.save(buffered, format="JPEG")
+                    image_url = base64.b64encode(buffered.getvalue()).decode()
+                except Exception as e:
+                    print(e)
+                    messagebox.showerror(parent=add_car_window, title="Error", message="Unable to read image.")
+                    return
+
+                # add the car
+                self.db.insert_car(plate, occupied_until, None, daily_price, production_date, production_name,
+                                   image_url)
+                messagebox.showinfo(parent=add_car_window, title="Success", message="Car added successfully.")
+                add_car_window.destroy()
+                self.show_cars()
+
+            # create the add button
+            add_button = customtkinter.CTkButton(input_frame, text="Add", command=add_callback)
+            add_button.grid(row=7, column=1, padx=10, pady=10, sticky="news")
+
+            # show input frame
+            input_frame.pack(fill="both", expand=True)
+
+        # add button frame
+        add_button_frame = customtkinter.CTkFrame(self.view_frame, fg_color="#1a1a1a")
+        add_car_button = customtkinter.CTkButton(add_button_frame, text="Add Car", command=add_car_callback)
+        add_button_frame.pack(fill="x", side="bottom")
+        add_car_button.pack(padx=10, pady=10, fill="x", side="bottom")
 
     def show_users(self):
         # Get all users from the database
@@ -390,7 +524,8 @@ class MainApp(customtkinter.CTk):
             is_admin_text = "Admin" if user['isAdmin'] == 1 else "User"
             is_admin_color = "#32ff7e" if user['isAdmin'] == 1 else None
             is_admin_boldness = "bold" if user['isAdmin'] == 1 else "normal"
-            is_admin_label = customtkinter.CTkLabel(frame, text=is_admin_text, text_color=is_admin_color, font=("Default", 13, is_admin_boldness))
+            is_admin_label = customtkinter.CTkLabel(frame, text=is_admin_text, text_color=is_admin_color,
+                                                    font=("Default", 13, is_admin_boldness))
             is_admin_label.grid(row=row, column=2)
 
             # show user image
@@ -412,8 +547,3 @@ class MainApp(customtkinter.CTk):
             combobox.grid(row=row, column=4, padx=10, sticky="e")
 
         return frame
-
-
-
-
-
