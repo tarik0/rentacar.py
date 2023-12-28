@@ -15,14 +15,15 @@ class CarDatabase:
             CREATE TABLE IF NOT EXISTS Users (
                 nationalId TEXT PRIMARY KEY CHECK (LENGTH(nationalId) = 11),
                 passHash TEXT NOT NULL CHECK (LENGTH(passHash) = 32),
-                fullname TEXT NOT NULL
+                fullname TEXT NOT NULL,
+                isAdmin INTEGER DEFAULT 0 CHECK (isAdmin = 0 OR isAdmin = 1)
             );
         """)
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS Cars (
                 plate TEXT PRIMARY KEY NOT NULL CHECK (LENGTH(plate) >= 7 AND LENGTH(plate) <= 9),
                 occupiedUntil DATE NOT NULL CHECK (occupiedUntil >= '0000-00-00'),
-                occupiedTo TEXT NOT NULL,
+                occupiedTo TEXT,
                 dailyPrice REAL NOT NULL,
                 productionDate DATE NOT NULL,
                 productionName TEXT NOT NULL,
@@ -36,8 +37,16 @@ class CarDatabase:
                                    (national_id, pass_hash))
         return cursor.fetchone()
 
-    def insert_user(self, national_id, pass_hash, fullname):
-        self.conn.execute("INSERT INTO Users (nationalId, passHash, fullname) VALUES (?, ?, ?)", (national_id, pass_hash, fullname))
+    def check_user_exists(self, national_id):
+        cursor = self.conn.execute("SELECT * FROM Users WHERE nationalId = ?",
+                                   (national_id,))
+        return cursor.fetchone()
+
+    def insert_user(self, national_id, pass_hash, fullname, is_admin=0):
+        self.conn.execute(
+            "INSERT INTO Users (nationalId, passHash, fullname, isAdmin) VALUES (?, ?, ?, ?)",
+            (national_id, pass_hash, fullname, is_admin)
+        )
         self.conn.commit()
 
     def insert_car(self, plate, occupied_until, occupied_to, daily_price, production_date, production_name, image_url):
@@ -47,8 +56,13 @@ class CarDatabase:
             (plate, occupied_until, occupied_to, daily_price, production_date, production_name, image_url))
         self.conn.commit()
 
+    def return_car(self, plate):
+        self.conn.execute("UPDATE Cars SET occupiedUntil = '0000-00-00', occupiedTo = NULL WHERE plate = ?", (plate,))
+        self.conn.commit()
+
     def remove_user(self, national_id):
         self.conn.execute("DELETE FROM Users WHERE nationalId = ?", (national_id,))
+        self.conn.execute("UPDATE Cars SET occupiedUntil = '0000-00-00', occupiedTo = NULL WHERE occupiedTo = ?", (national_id,))
         self.conn.commit()
 
     def remove_car(self, plate):
@@ -65,12 +79,24 @@ class CarDatabase:
             "LIMIT 1")
         return cursor.fetchone()
 
-    def fetch_all_available_cars(self):
-        cursor = self.conn.execute("SELECT * FROM Cars WHERE occupiedUntil <= CURRENT_DATE")
+    def fetch_cars(self):
+        cursor = self.conn.execute("SELECT * FROM Cars")
         return cursor.fetchall()
 
     def assign_car_to_user(self, plate, end_date, national_id):
-        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",(end_date, national_id, plate))
+        # until date should be more than CURRENT_DATE
+        self.conn.execute(
+            "UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",
+            (end_date, national_id, plate)
+        )
+        self.conn.commit()
+
+    def fetch_users(self):
+        cursor = self.conn.execute("SELECT * FROM Users")
+        return cursor.fetchall()
+
+    def set_user_admin(self, national_id, is_admin=1):
+        self.conn.execute("UPDATE Users SET isAdmin = ? WHERE nationalId = ?", (is_admin, national_id))
         self.conn.commit()
 
     def close(self):
