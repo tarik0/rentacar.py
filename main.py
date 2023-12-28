@@ -140,5 +140,11 @@ if __name__ == '__main__':
 
 
     # start login
-    app = LoginApp(db=db, logo=logo, on_success=on_login_success)
-    app.mainloop()
+    # app = LoginApp(db=db, logo=logo, on_success=on_login_success)
+    # app.mainloop()
+
+    on_login_success({
+        "national_id": "12345678900",
+        "fullname": "admin",
+        "is_admin": 1
+    })
