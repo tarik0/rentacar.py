@@ -1,6 +1,7 @@
 import base64
 from hashlib import md5
 from io import BytesIO
+from tkinter import messagebox
 
 import customtkinter
 from PIL import Image
@@ -113,6 +114,8 @@ def setup_dev_env():
         national_id="12345678900"
     )
 
+    messagebox.showinfo("Dev setup", f"Development environment setup complete.\n\nUser: 12345678900\nPassword: 123")
+
 
 if __name__ == '__main__':
     # set appearance mode to dark
@@ -137,8 +140,5 @@ if __name__ == '__main__':
 
 
     # start login
-    # app = LoginApp(db=db, logo=logo, on_success=on_login_success)
-    # app.mainloop()
-
-    # todo: remove this
-    on_login_success({})
+    app = LoginApp(db=db, logo=logo, on_success=on_login_success)
+    app.mainloop()

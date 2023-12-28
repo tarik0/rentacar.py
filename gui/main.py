@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from io import BytesIO
 from tkinter import messagebox
+from tkinter.constants import BOTH
 
 import customtkinter
 from PIL import Image, ImageDraw
@@ -28,7 +29,7 @@ class MainApp(customtkinter.CTk):
         self.menu_frame = customtkinter.CTkFrame(self, height=720, fg_color=dark_color)
         self.menu_frame.grid_columnconfigure(0, weight=0)
         self.menu_frame.grid_rowconfigure(0, weight=0)  # Allow the menu_frame to expand vertically
-        self.menu_frame.grid(row=0, column=0, sticky="news")
+        self.menu_frame.pack(fill="y", side="left")
 
         self.create_menu()
 
@@ -36,7 +37,7 @@ class MainApp(customtkinter.CTk):
         self.view_frame = customtkinter.CTkFrame(self, height=720)
         self.view_frame.grid_columnconfigure(0, weight=1)  # Allow the view_frame to expand horizontally
         self.view_frame.grid_rowconfigure(0, weight=1)  # Allow the view_frame to expand vertically
-        self.view_frame.grid(row=0, column=1, sticky="news")
+        self.view_frame.pack(fill="both", expand=True, side="right", padx=10, pady=10)
 
         self.show_cars()
 
@@ -56,6 +57,8 @@ class MainApp(customtkinter.CTk):
             # reset the view frame
             for widget in self.view_frame.grid_slaves():
                 widget.grid_forget()
+            for widget in self.view_frame.pack_slaves():
+                widget.pack_forget()
 
             for index in range(len(buttons)):
                 if index == active_index:
@@ -66,6 +69,8 @@ class MainApp(customtkinter.CTk):
             # show the view
             if active_index == 0:
                 self.show_cars()
+            elif active_index == 1:
+                self.show_users()
 
         # Create the menu buttons
         self.menu_buttons = [
@@ -114,8 +119,73 @@ class MainApp(customtkinter.CTk):
                 messagebox.showerror("Error", "This car is not available for rent.")
                 return
 
-        # todo: show inputs for the renter's national id and the rent date
-        pass
+        # show inputs for the renter's national id and the rent date
+        input_window = customtkinter.CTkToplevel(self, width=400, height=200)
+        input_window.title("Rent")
+        input_window.resizable(False, False)
+
+        # center the window
+        input_window.update_idletasks()
+        input_window.geometry(f"+{self.winfo_x() + self.winfo_width() // 2 - input_window.winfo_width() // 2}+"
+                              f"{self.winfo_y() + self.winfo_height() // 2 - input_window.winfo_height() // 2}")
+
+        # create the input frame
+        input_frame = customtkinter.CTkFrame(input_window, fg_color="#3a3a3a")
+        input_frame.grid_columnconfigure(0, weight=1)
+        input_frame.grid_columnconfigure(1, weight=1)
+        input_frame.grid_rowconfigure(0, weight=1)
+        input_frame.grid_rowconfigure(1, weight=1)
+        input_frame.grid_rowconfigure(2, weight=1)
+
+        # create the input labels
+        national_id_label = customtkinter.CTkLabel(input_frame, text="National ID", text_color="#ff3838",
+                                                   font=("Default", 15, "bold"))
+        rent_date_label = customtkinter.CTkLabel(input_frame, text="Return Date", text_color="#ff3838",
+                                                 font=("Default", 15, "bold"))
+        national_id_label.grid(row=0, column=0, padx=10, pady=10, sticky="news")
+        rent_date_label.grid(row=1, column=0, padx=10, pady=10, sticky="news")
+
+        # create the input entries
+        national_id_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="National ID")
+        rent_date_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Return Date (YYYY-MM-DD)")
+        national_id_entry.grid(row=0, column=1, padx=10, pady=10, sticky="news")
+        rent_date_entry.grid(row=1, column=1, padx=10, pady=10, sticky="news")
+
+        # create the rent button
+        def rent_callback():
+            # get the values from the entries
+            national_id = national_id_entry.get()
+            rent_date = rent_date_entry.get()
+
+            # check if the user exists
+            user = self.db.check_user_exists(national_id)
+            if user is None:
+                messagebox.showerror("Error", "User not found.")
+                return
+
+            # check if the rent date is valid
+            try:
+                datetime.strptime(rent_date, "%Y-%m-%d")
+            except ValueError:
+                messagebox.showerror("Error", "Invalid rent date.")
+                return
+
+            # check if date is in the past
+            if datetime.strptime(rent_date, "%Y-%m-%d") < datetime.now():
+                messagebox.showerror("Error", "Rent date cannot be in the past.")
+                return
+
+            # rent the car
+            self.db.assign_car_to_user(car['plate'], rent_date, national_id)
+            messagebox.showinfo("Success", "Car rented successfully.")
+            input_window.destroy()
+            self.show_cars()
+
+        rent_button = customtkinter.CTkButton(input_frame, text="Rent", command=rent_callback)
+        rent_button.grid(row=2, column=1, padx=10, pady=10, sticky="news")
+
+        # show the input frame
+        input_frame.pack(fill="both", expand=True)
 
     def view_delete_menu(self, car):
         # delete the car from the database
@@ -129,7 +199,7 @@ class MainApp(customtkinter.CTk):
         messagebox.showinfo("Success", "Car returned successfully.")
         self.show_cars()
 
-    def create_table_frame(self, master, available_cars, height=400):
+    def create_cars_frame(self, master, available_cars, height=400):
         # frame to show the list of available cars
         frame = customtkinter.CTkScrollableFrame(master, fg_color="#1a1a1a", height=height, corner_radius=5)
 
@@ -180,7 +250,8 @@ class MainApp(customtkinter.CTk):
 
             # show driver
             driver = "None" if car['occupied_to'] is None else car['occupied_to']
-            occupied_to_label = customtkinter.CTkLabel(frame, text=driver, font=("Default", 13))
+            boldness = "normal" if car['occupied_to'] is None else "bold"
+            occupied_to_label = customtkinter.CTkLabel(frame, text=driver, font=("Default", 13, boldness))
             occupied_to_label.grid(row=row, column=2)
 
             # show price
@@ -232,9 +303,117 @@ class MainApp(customtkinter.CTk):
             zip(["plate", "occupied_until", "occupied_to", "daily_price", "production_date", "production_name",
                  "image_url"], car)) for car in available_cars_tuples]
 
-        # Create the table frame
-        header_label = customtkinter.CTkLabel(self.view_frame, text="CARS", font=("Verdana", 25, "bold"))
-        frame = self.create_table_frame(self.view_frame, available_cars, height=600)
+        # reset the view frame
+        for widget in self.view_frame.grid_slaves():
+            widget.grid_forget()
+        for widget in self.view_frame.pack_slaves():
+            widget.pack_forget()
 
-        header_label.grid(row=0, column=0, pady=15, padx=15, sticky="news")
-        frame.grid(row=1, column=0, pady=15, padx=15, sticky="news")
+        # create table frame
+        table_frame = self.create_cars_frame(self.view_frame, available_cars)
+        table_frame.pack(fill="both", expand=True)
+
+    def show_users(self):
+        # Get all users from the database
+        users = self.db.fetch_users()
+
+        # reset the view frame
+        for widget in self.view_frame.grid_slaves():
+            widget.grid_forget()
+        for widget in self.view_frame.pack_slaves():
+            widget.pack_forget()
+
+        # deserialize the users
+        users = [dict(zip(["nationalId", "passHash", "fullname", "isAdmin"], user)) for user in users]
+
+        # create table frame
+        table_frame = self.create_users_frame(self.view_frame, users)
+        table_frame.pack(fill="both", expand=True)
+
+    def create_users_frame(self, view_frame, users):
+        # frame to show the list of users
+        frame = customtkinter.CTkScrollableFrame(view_frame, fg_color="#1a1a1a", height=400, corner_radius=5)
+
+        # set the column weights
+        for i in range(4):
+            frame.columnconfigure(i, weight=1)
+        frame.columnconfigure(4, weight=0)
+        frame.columnconfigure(5, weight=0)
+
+        # create the header labels
+        header_labels = ["National ID", "Full Name", "Role", "Picture", "Actions"]
+        for col, header in enumerate(header_labels):
+            label = customtkinter.CTkLabel(frame, text=header, text_color="#ff3838", font=("Default", 15, "bold"))
+            label.grid(row=0, pady=15, column=col)
+
+        # load the user images
+        user_image = Image.open("assets/user.png")
+        admin_image = Image.open("assets/admin.png")
+
+        # callbacks for the actions
+        callbacks = []
+        for user in users:
+            def action_callback(choice, _user=user):
+                if choice == "Actions":
+                    return
+
+                print("dropdown clicked:", choice)
+                print("national id:", _user['nationalId'])
+
+                if choice == "Remove":
+                    self.db.remove_user(_user['nationalId'])
+                    messagebox.showinfo("Success", "User deleted successfully.")
+                    self.show_users()
+                elif choice == "Set As Admin":
+                    self.db.set_user_admin(_user['nationalId'], 1)
+                    messagebox.showinfo("Success", "User is now an admin.")
+                    self.show_users()
+                elif choice == "Revoke Admin":
+                    self.db.set_user_admin(_user['nationalId'], 0)
+                    messagebox.showinfo("Success", "User is no longer an admin.")
+                    self.show_users()
+
+            callbacks.append(action_callback)
+
+        # display users
+        for row, user in enumerate(users, start=1):
+            # show national id
+            national_id_label = customtkinter.CTkLabel(frame, fg_color="#3c3c3c", text=user['nationalId'],
+                                                       font=("Consolas", 13, "bold"))
+            national_id_label.grid(row=row, column=0)
+
+            # show full name
+            fullname_label = customtkinter.CTkLabel(frame, text=user['fullname'], font=("Default", 13))
+            fullname_label.grid(row=row, column=1)
+
+            # show is admin
+            is_admin_text = "Admin" if user['isAdmin'] == 1 else "User"
+            is_admin_color = "#32ff7e" if user['isAdmin'] == 1 else None
+            is_admin_boldness = "bold" if user['isAdmin'] == 1 else "normal"
+            is_admin_label = customtkinter.CTkLabel(frame, text=is_admin_text, text_color=is_admin_color, font=("Default", 13, is_admin_boldness))
+            is_admin_label.grid(row=row, column=2)
+
+            # show user image
+            image = user_image if user['isAdmin'] == 0 else admin_image
+            image = customtkinter.CTkImage(light_image=image, size=(64, 64))
+            image_label = customtkinter.CTkLabel(frame, image=image, corner_radius=50, text=None)
+            image_label.grid(row=row, column=3, pady=5, sticky="news")
+
+            # show actions
+            combobox = customtkinter.CTkOptionMenu(
+                frame,
+                values=["Actions", "Remove", "Set As Admin", "Revoke Admin"],
+                command=lambda choice, _user=user: action_callback(choice, _user),
+                width=100,
+                fg_color="#ff3030",
+                text_color="white",
+                dynamic_resizing=False
+            )
+            combobox.grid(row=row, column=4, padx=10, sticky="e")
+
+        return frame
+
+
+
+
+

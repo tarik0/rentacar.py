@@ -37,6 +37,11 @@ class CarDatabase:
                                    (national_id, pass_hash))
         return cursor.fetchone()
 
+    def check_user_exists(self, national_id):
+        cursor = self.conn.execute("SELECT * FROM Users WHERE nationalId = ?",
+                                   (national_id,))
+        return cursor.fetchone()
+
     def insert_user(self, national_id, pass_hash, fullname, is_admin=0):
         self.conn.execute(
             "INSERT INTO Users (nationalId, passHash, fullname, isAdmin) VALUES (?, ?, ?, ?)",
@@ -57,6 +62,7 @@ class CarDatabase:
 
     def remove_user(self, national_id):
         self.conn.execute("DELETE FROM Users WHERE nationalId = ?", (national_id,))
+        self.conn.execute("UPDATE Cars SET occupiedUntil = '0000-00-00', occupiedTo = NULL WHERE occupiedTo = ?", (national_id,))
         self.conn.commit()
 
     def remove_car(self, plate):
@@ -78,7 +84,19 @@ class CarDatabase:
         return cursor.fetchall()
 
     def assign_car_to_user(self, plate, end_date, national_id):
-        self.conn.execute("UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",(end_date, national_id, plate))
+        # until date should be more than CURRENT_DATE
+        self.conn.execute(
+            "UPDATE Cars SET occupiedUntil = ?, occupiedTo = ? WHERE plate = ?",
+            (end_date, national_id, plate)
+        )
+        self.conn.commit()
+
+    def fetch_users(self):
+        cursor = self.conn.execute("SELECT * FROM Users")
+        return cursor.fetchall()
+
+    def set_user_admin(self, national_id, is_admin=1):
+        self.conn.execute("UPDATE Users SET isAdmin = ? WHERE nationalId = ?", (is_admin, national_id))
         self.conn.commit()
 
     def close(self):
