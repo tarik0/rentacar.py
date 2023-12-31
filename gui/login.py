@@ -103,12 +103,6 @@ class LoginApp(customtkinter.CTk):
             print("Invalid credentials!")
             return
 
-        # check if user is admin
-        if info[3] != 1:
-            messagebox.showerror("Auth", "Unauthorized access!")
-            print("User is not an admin.")
-            return
-
         # show message
         messagebox.showinfo("Login", f"Welcome {info[2]}!")
         print(f"Welcome {info[2]}!")

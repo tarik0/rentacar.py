@@ -135,7 +135,7 @@ if __name__ == '__main__':
         print("Login success", info)
 
         # start main
-        _app = MainApp(db=db, logo=logo)
+        _app = MainApp(db=db, logo=logo, login_info=info)
         _app.mainloop()
 
 

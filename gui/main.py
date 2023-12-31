@@ -13,11 +13,13 @@ from db import CarDatabase
 
 
 class MainApp(customtkinter.CTk):
-    def __init__(self, db: CarDatabase, logo: Image):
+    def __init__(self, db: CarDatabase, logo: Image, login_info: dict):
         super().__init__()
+        self.menu_label = None
         self.menu_buttons = None
         self.logo_label = None
 
+        self.login_info = login_info
         self.db, self.logo = db, logo
         self.geometry("1250x700")
         self.title("RENTACAR - SYSTEM")
@@ -55,6 +57,11 @@ class MainApp(customtkinter.CTk):
         self.menu_label.grid(row=2, column=0, pady=20, padx=0, sticky="ew")
 
         def on_menu_button_click(buttons, active_index):
+            # Check if user is admin
+            if active_index == 1 and self.login_info[3] == 0:
+                messagebox.showerror("Error", "You are unable to view this page.")
+                return
+
             # reset the view frame
             for widget in self.view_frame.grid_slaves():
                 widget.grid_forget()
@@ -71,6 +78,10 @@ class MainApp(customtkinter.CTk):
             if active_index == 0:
                 self.show_cars()
             elif active_index == 1:
+                # Check if user is admin
+                if self.login_info[3] == 0:
+                    messagebox.showerror("Error", "You are not an admin.")
+                    return
                 self.show_users()
 
         # Create the menu buttons
@@ -140,14 +151,17 @@ class MainApp(customtkinter.CTk):
 
         # create the input labels
         national_id_label = customtkinter.CTkLabel(input_frame, text="National ID", text_color="#ff3838",
-                                                   font=("Default", 15, "bold"))
+                                                   font=("Default", 15, "bold") )
         rent_date_label = customtkinter.CTkLabel(input_frame, text="Return Date", text_color="#ff3838",
                                                  font=("Default", 15, "bold"))
         national_id_label.grid(row=0, column=0, padx=10, pady=10, sticky="news")
         rent_date_label.grid(row=1, column=0, padx=10, pady=10, sticky="news")
 
         # create the input entries
-        national_id_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="National ID")
+        national_id_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="National ID",
+                                                   state="disabled" if self.login_info[3] == 0 else "normal",
+                                                   textvariable=customtkinter.StringVar(value=self.login_info[0])
+                                                   )
         rent_date_entry = customtkinter.CTkEntry(input_frame, width=180, placeholder_text="Return Date (YYYY-MM-DD)")
         national_id_entry.grid(row=0, column=1, padx=10, pady=10, sticky="news")
         rent_date_entry.grid(row=1, column=1, padx=10, pady=10, sticky="news")
@@ -161,24 +175,24 @@ class MainApp(customtkinter.CTk):
             # check if the user exists
             user = self.db.check_user_exists(national_id)
             if user is None:
-                messagebox.showerror("Error", "User not found.")
+                messagebox.showerror("Error", "User not found.", parent=input_window)
                 return
 
             # check if the rent date is valid
             try:
                 datetime.strptime(rent_date, "%Y-%m-%d")
             except ValueError:
-                messagebox.showerror("Error", "Invalid rent date.")
+                messagebox.showerror("Error", "Invalid rent date.", parent=input_window)
                 return
 
             # check if date is in the past
             if datetime.strptime(rent_date, "%Y-%m-%d") < datetime.now():
-                messagebox.showerror("Error", "Rent date cannot be in the past.")
+                messagebox.showerror("Error", "Rent date cannot be in the past.", parent=input_window)
                 return
 
             # rent the car
             self.db.assign_car_to_user(car['plate'], rent_date, national_id)
-            messagebox.showinfo("Success", "Car rented successfully.")
+            messagebox.showinfo("Success", "Car rented successfully.", parent=input_window)
             input_window.destroy()
             self.show_cars()
 
@@ -284,7 +298,7 @@ class MainApp(customtkinter.CTk):
             # show actions
             combobox = customtkinter.CTkOptionMenu(
                 frame,
-                values=["Actions", "Rent", "Return", "Remove"],
+                values=["Actions", "Rent", "Return", "Remove"] if self.login_info[3] == 1 else ["Actions", "Rent"],
                 command=callbacks[row - 1],
                 width=100,
                 fg_color="#ff3030",
@@ -316,6 +330,11 @@ class MainApp(customtkinter.CTk):
 
         # create the add car button
         def add_car_callback():
+            # check if the user is an admin
+            if self.login_info[3] == 0:
+                messagebox.showerror("Error", "You are unauthorized to add a car.")
+                return
+
             # create a new window
             add_car_window = customtkinter.CTkToplevel(self, width=400, height=500)
             add_car_window.title("Add Car")
